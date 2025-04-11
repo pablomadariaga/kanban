@@ -4,6 +4,7 @@ namespace Pablomadariaga\Kanban;
 
 use Illuminate\Support\ServiceProvider;
 use Livewire\Livewire;
+use Pablomadariaga\Kanban\Foundation\Support\Blade\Directives;
 
 /**
  * Class KanbanServiceProvider
@@ -21,11 +22,9 @@ class KanbanServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        // Merge the package configuration with the application's copy (if published).
-        $this->mergeConfigFrom(
-            __DIR__ . '/../config/kanban.php',
-            'kanban'
-        );
+        $this->registerConfig();
+
+        $this->app->singleton('Kanban', Kanban::class);
     }
 
     /**
@@ -56,17 +55,31 @@ class KanbanServiceProvider extends ServiceProvider
             $this->publishes([
                 __DIR__ . '/../resources/views/' => resource_path('views/vendor/kanban'),
             ], 'kanban-views');
+
+            Directives::register();
         }
 
+
+
+        // Register the Livewire component for the Kanban board, if Livewire is available.
+        if (class_exists(Livewire::class)) {
+            Livewire::component('kanban-board', \Pablomadariaga\Kanban\Livewire\KanbanBoard::class);
+        }
+    }
+
+    protected function registerConfig(): void
+    {
         // Automatically load the package's migrations without requiring publishing.
         $this->loadMigrationsFrom(__DIR__ . '/../database/migrations');
 
         // Load the package's views and assign a view namespace ("kanban").
         $this->loadViewsFrom(__DIR__ . '/../resources/views', 'kanban');
 
-        // Register the Livewire component for the Kanban board, if Livewire is available.
-        if (class_exists(Livewire::class)) {
-            Livewire::component('kanban-board', \Pablomadariaga\Kanban\Livewire\KanbanBoard::class);
-        }
+        // Merge the package configuration with the application's copy (if published).
+        $this->mergeConfigFrom(__DIR__ . '/../config/kanban.php', 'kanban');
+
+        $this->loadRoutesFrom(__DIR__ . '/routes.php');
+
+        $this->loadTranslationsFrom(__DIR__ . '/lang', 'kanban');
     }
 }

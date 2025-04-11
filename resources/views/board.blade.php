@@ -11,7 +11,7 @@
                 {{ $state->name }}
             </div>
             {{-- Cards List --}}
-            <ul class="flex flex-col gap-2 px-2 pb-2" x-data {{-- Initialize Alpine.js context for this column (not strictly needed for x-sort, but can be used if extended) --}}
+            <ul class="flex flex-col gap-2 px-2 py-2" x-sort
                 x-sort.ghost="$wire.moveCard($item, {{ $state->id }}, $position)"
                 x-sort:group="'board-{{ $board->id }}'" wire:key="state-{{ $state->id }}">
                 @foreach ($state->cards as $card)

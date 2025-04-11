@@ -5,5 +5,5 @@ module.exports = {
   content: ["./**/*.js", "./**/*.blade.php", "./**/**/*.blade.php"],
   darkMode: "class",
   theme: {},
-  plugins: [require("./js/plugins/kaban")],
+  plugins: [require("./js/plugins/sortableStyles")],
 };
