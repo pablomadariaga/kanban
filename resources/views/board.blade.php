@@ -4,7 +4,7 @@
 
 <div class="flex gap-4 overflow-x-auto p-4">
     @foreach ($board->states as $state)
-        <div class="lex-shrink-0 w-64 rounded-xl bg-stone-300/70 dark:bg-stone-800/80">
+        <div class="w-64 flex-shrink-0 rounded-xl bg-stone-300/70 dark:bg-stone-800/80">
             {{-- State Column Header --}}
             <div
                 class="rounded-t-xl bg-stone-400/70 px-3 py-2 text-sm font-semibold text-stone-800 dark:bg-stone-950/60 dark:text-stone-100">
