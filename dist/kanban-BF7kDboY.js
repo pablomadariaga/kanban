@@ -7,4 +7,4 @@ sortablejs/modular/sortable.esm.js:
    * @author	owenm    <owen23355@gmail.com>
    * @license MIT
    *)
-*/document.addEventListener("alpine:init",()=>{window.Alpine.plugin(dn)});
+*/document.addEventListener("alpine:init",()=>{Alpine&&!Alpine._sortPluginInstalled&&(Alpine.plugin(dn),Alpine._sortPluginInstalled=!0)});

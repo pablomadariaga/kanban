@@ -1,4 +1,5 @@
 /** @type {import('vite').UserConfig} */
+import tailwindcss from "@tailwindcss/vite";
 
 export default {
   build: {
@@ -8,5 +9,5 @@ export default {
       input: ["js/kanban.js"],
     },
   },
-  plugins: [],
+  plugins: [tailwindcss()],
 };
