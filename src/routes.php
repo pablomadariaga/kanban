@@ -1,7 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use TallStackUi\Foundation\Http\Controllers\KanbanAssetsController;
+use Pablomadariaga\Kanban\Http\Controllers\KanbanAssetsController;
 
 Route::name('kaban.')
     ->prefix('/kaban')

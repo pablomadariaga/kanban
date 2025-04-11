@@ -44,4 +44,15 @@ return [
 
     'card_title_attribute' => 'title',
 
+    /*
+    |--------------------------------------------------------------------------
+    | Assets Fallback
+    |--------------------------------------------------------------------------
+    |
+    | Controls the fallback behavior for loading assets.
+    |
+    | MAKE SURE TO READ THE DOCS BEFORE MANIPULATING THIS.
+    */
+    'assets_fallback' => env('KANBAN_ASSETS_FALLBACK', true),
+
 ];
