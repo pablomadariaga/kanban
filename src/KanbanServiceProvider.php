@@ -47,7 +47,7 @@ class KanbanServiceProvider extends ServiceProvider
                 __DIR__ . '/../database/migrations/' => database_path('migrations'),
             ], 'kanban-migrations');
 
-            // Publish the CSS asset to the public directory.
+            // Publish the CSS build asset to the public directory.
             $this->publishes([
                 __DIR__ . '/../public/css/kanban.css' => public_path('vendor/pablomadariaga/kanban/css/kanban.css'),
             ], 'kanban-assets');
