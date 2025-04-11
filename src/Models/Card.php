@@ -73,7 +73,7 @@ class Card extends Model
      * Get the related model for this card (polymorphic relationship).
      * This allows the card to reference any Eloquent model in the application (e.g., a Task, Issue, etc.).
      *
-     * @return MorphTo<Model>
+     * @return \Illuminate\Database\Eloquent\Relations\MorphTo
      */
     public function cardable(): MorphTo
     {

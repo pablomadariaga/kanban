@@ -39,7 +39,7 @@ class State extends Model
      * The attributes that are mass assignable.
      * @var array<string>
      */
-    protected $fillable = ['board_id', 'name', 'position'];
+    protected $fillable = ['board_id', 'name', 'color', 'position'];
 
     /**
      * Get the board that this state belongs to.

@@ -1,6 +1,6 @@
 <?php
 
-namespace Madariaga\Kanban\Traits;
+namespace Pablomadariaga\Kanban\Traits;
 
 use Pablomadariaga\Kanban\Models\Card;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
@@ -17,7 +17,7 @@ use Illuminate\Database\Eloquent\Relations\MorphOne;
  * namespace App\Models;
  *
  * use Illuminate\Database\Eloquent\Model;
- * use Madariaga\Kanban\Traits\HasKanbanCard;
+ * use Pablomadariaga\Kanban\Traits\HasKanbanCard;
  *
  * class Task extends Model
  * {
@@ -34,7 +34,7 @@ use Illuminate\Database\Eloquent\Relations\MorphOne;
  * $kanbanCard = $task->kanbanCard; // Returns the associated card instance or null if none.
  * ```
  *
- * @package Madariaga\Kanban\Traits
+ * @package Pablomadariaga\Kanban\Traits
  */
 trait HasKanbanCard
 {

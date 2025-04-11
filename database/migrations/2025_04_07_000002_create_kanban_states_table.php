@@ -32,6 +32,7 @@ return new class extends Migration {
                 ->constrained('kanban_boards')
                 ->cascadeOnDelete();
             $table->string('name');
+            $table->string('color');
             $table->unsignedInteger('position');
             $table->timestamps();
 
