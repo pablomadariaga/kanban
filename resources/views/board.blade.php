@@ -4,7 +4,8 @@
 
 <div class="flex gap-4 overflow-x-auto p-4">
     @foreach ($board->states as $state)
-        <div class="relative w-64 flex-shrink-0 rounded-xl bg-stone-300/30 shadow-sm dark:bg-stone-800/30">
+        <div class="relative w-64 flex-shrink-0 rounded-xl border-t-2 bg-stone-300/30 shadow-md dark:bg-stone-800/30"
+            style="border-top-color: {{ $state->color ?? '#000' }}">
             {{-- State Column Header --}}
             <div
                 class="flex items-center justify-between rounded-t-xl bg-stone-400/30 px-3 py-2 text-sm font-semibold text-stone-800 dark:bg-stone-950/50 dark:text-stone-100">
