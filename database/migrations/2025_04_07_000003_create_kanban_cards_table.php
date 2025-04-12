@@ -43,8 +43,6 @@ return new class extends Migration {
 
             // Ensure each cardable model instance can only appear once per board.
             $table->unique(['board_id', 'cardable_type', 'cardable_id']);
-            // Ensure unique position of card within a state (no two cards share the same position in one state).
-            $table->unique(['state_id', 'position']);
 
             // Index to optimize queries filtering by state (for loading cards in a column).
             $table->index('state_id');
