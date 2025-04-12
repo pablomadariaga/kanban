@@ -3,7 +3,8 @@
 namespace Pablomadariaga\Kanban\Traits;
 
 use Pablomadariaga\Kanban\Models\Card;
-use Illuminate\Database\Eloquent\Relations\MorphOne;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Trait HasKanbanCard
@@ -44,10 +45,27 @@ trait HasKanbanCard
      * This method sets up the relationship linking the current model (as cardable) with a Card.
      * It uses the columns "cardable_type" and "cardable_id" in the cards table.
      *
-     * @return MorphOne<Card> Returns the associated Card model instance.
+     * @return MorphMany<Card> Returns the associated Card model instance.
      */
-    public function kanbanCard(): MorphOne
+    public function kanbanCard(): MorphMany
     {
-        return $this->morphOne(Card::class, 'cardable');
+        return $this->morphMany(Card::class, 'cardable');
+    }
+
+
+    public static function createCard(array $attributes)
+    {
+        return DB::transaction(function () use ($attributes) {
+            $cardClass = config('kanban.models.card', Card::class);
+            // Updates all cards in the state by adding 1 to their position.
+            // This moves all cards one position forward and avoids conflicts with the uniqueness constraint.
+            $cardClass::where('state_id', $attributes['state_id'])
+                ->where('board_id', $attributes['board_id'])
+                ->increment('position');
+
+            // Assign position 0 to the new card.
+            $attributes['position'] = 0;
+            return $cardClass::create($attributes);
+        });
     }
 }
