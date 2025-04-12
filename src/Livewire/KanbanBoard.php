@@ -17,12 +17,12 @@ use Pablomadariaga\Kanban\Models\Card;
  * Usage in Blade:
  * <livewire:kanban-board :boardId="$boardId" />
  *
- * @property \Pablomadariaga\Kanban\Models\Board $board  The Kanban board instance being displayed.
+ * @property \Pablomadariaga\Kanban\Models\Board $board The Kanban board instance being displayed.
  */
 class KanbanBoard extends Component
 {
     /**
-     * The ID of the board to display. Passed in from the component initialization.
+     * The ID of the board to display. Passed in during component initialization.
      * @var int
      */
     public int $boardId;
@@ -35,7 +35,7 @@ class KanbanBoard extends Component
 
     /**
      * Mount the component with the given board identifier.
-     * Loads the Board and its related States and Cards.
+     * Loads the Board and its associated States and Cards.
      *
      * @param  int  $boardId  The ID of the Kanban board to load.
      * @return void
@@ -44,12 +44,12 @@ class KanbanBoard extends Component
     {
         $this->boardId = $boardId;
         $boardClass = config('kanban.models.board', Board::class);
-        // Load the board along with its states and cards (and cardable models).
+        // Load the board along with its states and cards (including cardable models).
         $this->board = $boardClass::with(['states.cards.cardable'])->findOrFail($boardId);
     }
 
     /**
-     * Handle a card being moved to a new state or position.
+     * Handles a card being moved to a new state or position.
      * This method is called via Livewire from the Alpine.js drag-and-drop event.
      *
      * @param  int  $cardId         The ID of the card being moved.
@@ -66,13 +66,13 @@ class KanbanBoard extends Component
         $card = $cardClass::findOrFail($cardId);
         $currentStateId = $card->state_id;
 
-        // Prevenir mover tarjetas a otro board
+        // Prevent moving cards to another board.
         if ($card->board_id !== $this->board->id) {
             return;
         }
 
         DB::transaction(function () use ($card, $currentStateId, $targetStateId, $position, $stateClass) {
-            // Obtener las colecciones de tarjetas actuales de source y target.
+            // Retrieve the card collections of the source and target states.
             $sourceState = $stateClass::find($currentStateId);
             $sourceStateCards = $sourceState->cards()->orderBy('position')->get();
 
@@ -83,50 +83,50 @@ class KanbanBoard extends Component
                 $targetStateCards = $targetState->cards()->orderBy('position')->get();
             }
 
-            // Remover la tarjeta que se está moviendo de la colección del estado origen.
+            // Remove the card being moved from the source state's collection.
             $sourceIndex = $sourceStateCards->search(fn($c) => $c->id === $card->id);
             if ($sourceIndex !== false) {
                 $sourceStateCards->splice($sourceIndex, 1);
             }
 
-            // Si se mueve a un estado distinto, asegurarse de que no esté ya presente en la colección destino.
+            // When moving to a different state, ensure the card is not already present in the target collection.
             if ($currentStateId !== $targetStateId) {
                 $targetStateCards = $targetStateCards->filter(fn($c) => $c->id !== $card->id);
             }
 
-            // Actualizar el state_id de la tarjeta (para el caso de estados diferentes).
+            // Update the card's state_id (for different state moves).
             $card->state_id = $targetStateId;
-            // La actualización de state_id se aplicará mediante la consulta masiva en el grupo destino.
+            // The state_id update will be applied via the bulk update query below.
 
-            // Insertar la tarjeta en la colección destino en la posición indicada.
+            // Insert the card into the target collection at the specified position.
             $position = max(0, $position);
             $position = ($position > $targetStateCards->count()) ? $targetStateCards->count() : $position;
             $targetStateCards->splice($position, 0, [$card]);
 
             if ($currentStateId === $targetStateId) {
-                // Reordenamiento dentro del mismo estado: actualizamos la colección destino.
+                // Reordering within the same state: update the target collection.
                 $this->bulkUpdatePositions($targetStateCards);
             } else {
-                // En estados diferentes: actualizamos masivamente ambas colecciones.
+                // When moving between different states, perform a bulk update on both collections.
                 $this->bulkUpdatePositions($sourceStateCards);
-                // En la actualización destino, actualizamos además el state_id de la tarjeta movida.
+                // For the target state, also update the state_id of the moved card.
                 $this->bulkUpdatePositions($targetStateCards, true, $card->id, $targetStateId);
             }
         });
 
-        // Refrescar el board para reflejar el cambio.
+        // Refresh the board to reflect the updated positions.
         $boardClass = config('kanban.models.board', Board::class);
         $this->board = $boardClass::with(['states.cards.cardable'])->find($this->board->id);
         $this->dispatch('card-moved', cardId: $cardId);
     }
 
     /**
-     * Actualiza masivamente las posiciones de las tarjetas usando una consulta SQL con CASE.
+     * Performs a bulk update of card positions using an SQL query with a CASE statement.
      *
-     * @param \Illuminate\Support\Collection $cards Colección de tarjetas a actualizar.
-     * @param bool $updateStateId Indica si se debe actualizar también el state_id (para la tarjeta movida).
-     * @param int|null $movedCardId ID de la tarjeta movida.
-     * @param int|null $targetStateId Nuevo state_id para la tarjeta movida.
+     * @param \Illuminate\Support\Collection $cards Collection of cards to update.
+     * @param bool $updateStateId Indicates whether to also update the state_id (for the moved card).
+     * @param int|null $movedCardId ID of the moved card.
+     * @param int|null $targetStateId New state_id for the moved card.
      * @return void
      */
     private function bulkUpdatePositions($cards, bool $updateStateId = false, ?int $movedCardId = null, ?int $targetStateId = null): void
@@ -159,7 +159,7 @@ class KanbanBoard extends Component
 
     /**
      * Render the Kanban board view.
-     * This will use the Blade template provided by the package to display the board.
+     * This uses the Blade template provided by the package to display the board.
      *
      * @return \Illuminate\View\View
      */
