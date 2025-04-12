@@ -59,7 +59,6 @@ class KanbanBoard extends Component
      */
     public function moveCard(int $cardId, int $targetStateId, int $position): void
     {
-        // Load the card and determine its current state.
         $cardClass = config('kanban.models.card', Card::class);
         $stateClass = config('kanban.models.state', State::class);
 
@@ -67,77 +66,95 @@ class KanbanBoard extends Component
         $card = $cardClass::findOrFail($cardId);
         $currentStateId = $card->state_id;
 
-        // If the card is not on the same board as this component's board, abort for safety.
+        // Prevenir mover tarjetas a otro board
         if ($card->board_id !== $this->board->id) {
-            return; // Prevent moving cards to a different board (ignore the action).
+            return;
         }
 
-        // If the card's state is unchanged and position is unchanged, no action needed.
-        if ($currentStateId == $targetStateId) {
-            // We still handle reordering within the same state.
-        }
-
-        // Perform the reordering in a transaction to ensure consistency.
         DB::transaction(function () use ($card, $currentStateId, $targetStateId, $position, $stateClass) {
-            // Get the collection of cards in the source state (and target state if different).
-            $sourceStateCards = $stateClass::find($currentStateId)
-                ->cards()
-                ->orderBy('position')
-                ->get();
-            $targetStateCards = ($currentStateId === $targetStateId)
-                ? $sourceStateCards
-                : $stateClass::find($targetStateId)
-                ->cards()
-                ->orderBy('position')
-                ->get();
+            // Obtener las colecciones de tarjetas actuales de source y target.
+            $sourceState = $stateClass::find($currentStateId);
+            $sourceStateCards = $sourceState->cards()->orderBy('position')->get();
 
-            // Remove the card from the source state list
+            if ($currentStateId === $targetStateId) {
+                $targetStateCards = $sourceStateCards;
+            } else {
+                $targetState = $stateClass::find($targetStateId);
+                $targetStateCards = $targetState->cards()->orderBy('position')->get();
+            }
+
+            // Remover la tarjeta que se está moviendo de la colección del estado origen.
             $sourceIndex = $sourceStateCards->search(fn($c) => $c->id === $card->id);
             if ($sourceIndex !== false) {
                 $sourceStateCards->splice($sourceIndex, 1);
             }
 
-            // If moving to a different state, also remove it from the target list if somehow present (shouldn't be).
+            // Si se mueve a un estado distinto, asegurarse de que no esté ya presente en la colección destino.
             if ($currentStateId !== $targetStateId) {
                 $targetStateCards = $targetStateCards->filter(fn($c) => $c->id !== $card->id);
             }
 
-            // Update the card's state to the new state.
+            // Actualizar el state_id de la tarjeta (para el caso de estados diferentes).
             $card->state_id = $targetStateId;
+            // La actualización de state_id se aplicará mediante la consulta masiva en el grupo destino.
 
-            // Insert the card into the target state's collection at the specified position.
-            $position = max(0, $position); // ensure position is not negative
-            $position = ($position > $targetStateCards->count())
-                ? $targetStateCards->count()
-                : $position;
+            // Insertar la tarjeta en la colección destino en la posición indicada.
+            $position = max(0, $position);
+            $position = ($position > $targetStateCards->count()) ? $targetStateCards->count() : $position;
             $targetStateCards->splice($position, 0, [$card]);
 
-            // Recalculate and persist positions for cards in the source state.
             if ($currentStateId === $targetStateId) {
-                // Same state reordering: $sourceStateCards and $targetStateCards are the same reference.
-                $updatedCards = $targetStateCards;
+                // Reordenamiento dentro del mismo estado: actualizamos la colección destino.
+                $this->bulkUpdatePositions($targetStateCards);
             } else {
-                // Different state: Update source state card positions (closing the gap).
-                $index = 0;
-                foreach ($sourceStateCards as $c) {
-                    $c->position = $index++;
-                    $c->save();
-                }
-                // Prepare to update target state cards (including the moved card).
-                $updatedCards = $targetStateCards;
-            }
-
-            // Save the new positions in the target state (and the moved card's new state).
-            $index = 0;
-            foreach ($updatedCards as $c) {
-                $c->position = $index++;
-                $c->save();
+                // En estados diferentes: actualizamos masivamente ambas colecciones.
+                $this->bulkUpdatePositions($sourceStateCards);
+                // En la actualización destino, actualizamos además el state_id de la tarjeta movida.
+                $this->bulkUpdatePositions($targetStateCards, true, $card->id, $targetStateId);
             }
         });
 
-        // Refresh the board and its relations to reflect the updated positions.
+        // Refrescar el board para reflejar el cambio.
         $boardClass = config('kanban.models.board', Board::class);
         $this->board = $boardClass::with(['states.cards.cardable'])->find($this->board->id);
+        $this->dispatch('card-moved', cardId: $cardId);
+    }
+
+    /**
+     * Actualiza masivamente las posiciones de las tarjetas usando una consulta SQL con CASE.
+     *
+     * @param \Illuminate\Support\Collection $cards Colección de tarjetas a actualizar.
+     * @param bool $updateStateId Indica si se debe actualizar también el state_id (para la tarjeta movida).
+     * @param int|null $movedCardId ID de la tarjeta movida.
+     * @param int|null $targetStateId Nuevo state_id para la tarjeta movida.
+     * @return void
+     */
+    private function bulkUpdatePositions($cards, bool $updateStateId = false, ?int $movedCardId = null, ?int $targetStateId = null): void
+    {
+        if ($cards->isEmpty()) {
+            return;
+        }
+
+        $ids = $cards->pluck('id')->toArray();
+        $casesPosition = '';
+        $casesStateId = '';
+
+        foreach ($cards as $index => $card) {
+            $casesPosition .= " WHEN id = {$card->id} THEN {$index} ";
+            if ($updateStateId && $movedCardId !== null && $targetStateId !== null) {
+                if ($card->id === $movedCardId) {
+                    $casesStateId .= " WHEN id = {$card->id} THEN {$targetStateId} ";
+                }
+            }
+        }
+
+        $idsList = implode(',', $ids);
+        $sql = "UPDATE kanban_cards SET position = CASE {$casesPosition} END";
+        if ($updateStateId) {
+            $sql .= ", state_id = CASE {$casesStateId} ELSE state_id END";
+        }
+        $sql .= " WHERE id IN ({$idsList})";
+        DB::update($sql);
     }
 
     /**
